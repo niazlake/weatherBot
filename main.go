@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,7 +22,7 @@ func main() {
 		}
 
 		for _, update :=range updates {
-			err = response(botUrl, update)
+			response(botUrl, update)
 			offset = update.UpdateId + 1
 		}
 	}
@@ -35,12 +34,8 @@ func getUpdates(botUrl string, offset int) ([]Update, error) {
 		return nil, err
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
+	defer resp.Body.Close()
+
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -70,19 +65,18 @@ func response(botUrl string, update Update) (error) {
 	if err != nil {
 		return err
 	}
-
 	botMessage.ChatId = update.Message.Chat.ChatId
 	botMessage.Text = "Температура сейчас: " + FloatToString(weatherInfo.Current.TempC) + "C"
 
 	buf, err := json.Marshal(botMessage)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	_, err = http.Post(botUrl + "/sendMessage", "application/json", bytes.NewBuffer(buf))
 
 	if err != nil {
-		return err
+		return nil
 	}
 
 	return nil
