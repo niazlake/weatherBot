@@ -2,7 +2,7 @@ package models
 
 type Update struct {
 	UpdateId int     `json:"update_id"`
-	Message  Message `json:"message"`
+	Message  *Message `json:"message"`
 }
 
 type Message struct {
@@ -24,7 +24,7 @@ type BotMessage struct {
 }
 
 type WeatherResponse struct {
-	Location struct {
+	Location *struct {
 		Name           string  `json:"name"`
 		Region         string  `json:"region"`
 		Country        string  `json:"country"`
@@ -34,7 +34,7 @@ type WeatherResponse struct {
 		LocaltimeEpoch int     `json:"localtime_epoch"`
 		Localtime      string  `json:"localtime"`
 	} `json:"location"`
-	Current struct {
+	Current *struct {
 		LastUpdatedEpoch int     `json:"last_updated_epoch"`
 		LastUpdated      string  `json:"last_updated"`
 		TempC            float64 `json:"temp_c"`

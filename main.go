@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
-	"unicode"
 	."weatherBot/models"
 )
 
@@ -15,6 +15,7 @@ import (
 const botToken = "2106950597:AAE1mxNipcDVfK5k6s5gJg0hBnu1zLqKxqU"
 const botApi = "https://api.telegram.org/bot"
 const botUrl = botApi + botToken
+var isStringAlphabetic = regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
 
 func main() {
 
@@ -26,8 +27,10 @@ func main() {
 		}
 
 		for _, update :=range updates {
-			response(update)
-			offset = update.UpdateId + 1
+			if update.Message != nil {
+				response(update)
+				offset = update.UpdateId + 1
+			}
 		}
 	}
 }
@@ -60,21 +63,14 @@ func FloatToString(inputNumber float64) string {
 	return strconv.FormatFloat(inputNumber, 'f', 0, 64)
 }
 
-func IsLetter(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLetter(r) {
-			return false
-		}
-	}
-	return true
-}
+
 
 func response(update Update) error {
 	var botMessage BotMessage
 	var weatherInfo *WeatherResponse
 	botMessage.ChatId = update.Message.Chat.ChatId
 
-	if !IsLetter(update.Message.Text) {
+	if !isStringAlphabetic(update.Message.Text) {
 		botMessage.Text = "Please enter in English"
 		sendMessageBot(botMessage)
 		return nil
@@ -82,6 +78,10 @@ func response(update Update) error {
 
 	weatherInfo, err := getWeather(update.Message.Text)
 	if err != nil {
+		return err
+	}
+
+	if weatherInfo == nil  || weatherInfo.Current == nil {
 		return err
 	}
 
