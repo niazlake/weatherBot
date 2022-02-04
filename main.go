@@ -7,13 +7,17 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"unicode"
 	."weatherBot/models"
 )
 
+
+const botToken = "2106950597:AAE1mxNipcDVfK5k6s5gJg0hBnu1zLqKxqU"
+const botApi = "https://api.telegram.org/bot"
+const botUrl = botApi + botToken
+
 func main() {
-	botToken := "2106950597:AAE1mxNipcDVfK5k6s5gJg0hBnu1zLqKxqU"
-	botApi := "https://api.telegram.org/bot"
-	botUrl := botApi + botToken
+
 	offset := 0
 	for ; ; {
 		updates, err := getUpdates(botUrl, offset)
@@ -22,7 +26,7 @@ func main() {
 		}
 
 		for _, update :=range updates {
-			response(botUrl, update)
+			response(update)
 			offset = update.UpdateId + 1
 		}
 	}
@@ -56,19 +60,42 @@ func FloatToString(inputNumber float64) string {
 	return strconv.FormatFloat(inputNumber, 'f', 0, 64)
 }
 
+func IsLetter(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
+}
 
-func response(botUrl string, update Update) (error) {
+func response(update Update) error {
 	var botMessage BotMessage
 	var weatherInfo *WeatherResponse
+	botMessage.ChatId = update.Message.Chat.ChatId
+
+	if !IsLetter(update.Message.Text) {
+		botMessage.Text = "Please enter in English"
+		sendMessageBot(botMessage)
+		return nil
+	}
 
 	weatherInfo, err := getWeather(update.Message.Text)
 	if err != nil {
 		return err
 	}
-	botMessage.ChatId = update.Message.Chat.ChatId
-	botMessage.Text = "Температура сейчас: " + FloatToString(weatherInfo.Current.TempC) + "C"
 
-	buf, err := json.Marshal(botMessage)
+	temperature := "Температура сейчас: " + FloatToString(weatherInfo.Current.TempC) + "C"
+	city := "Город: " + weatherInfo.Location.Country + ", " + weatherInfo.Location.Name + "\n"
+	botMessage.Text = city + temperature
+
+	sendMessageBot(botMessage)
+
+	return nil
+}
+
+func sendMessageBot(message BotMessage) error {
+	buf, err := json.Marshal(message)
 	if err != nil {
 		return nil
 	}
@@ -78,7 +105,6 @@ func response(botUrl string, update Update) (error) {
 	if err != nil {
 		return nil
 	}
-
 	return nil
 }
 
